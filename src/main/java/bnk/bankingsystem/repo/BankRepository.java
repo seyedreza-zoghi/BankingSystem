@@ -9,4 +9,5 @@ import java.util.Optional;
 @Repository
 public interface BankRepository extends JpaRepository<BankAccount, Long> {
     Optional<BankAccount> getBankAccountByAccountNumber(String accountNumber);
+    BankAccount getBankAccountByCustomerName(String string);
 }

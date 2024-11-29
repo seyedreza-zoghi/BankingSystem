@@ -1,6 +1,8 @@
 package bnk.bankingsystem;
 
 import bnk.bankingsystem.enums.EN_OperationType;
+import bnk.bankingsystem.model.BankAccount;
+import bnk.bankingsystem.repo.BankRepository;
 import bnk.bankingsystem.service.BankService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,22 +22,26 @@ class BankingSystemApplicationTests {
     @Autowired
     private BankService bankService;
 
+    @Autowired
+    private BankRepository bankRepository;
+
     @BeforeEach
     public void setUp() {
-        bankService.createAccount("ACC-12345", new BigDecimal("1000.00"));
+        BankAccount account = bankService.createAccount("ACC-12345", new BigDecimal("1000.00"));
     }
 
     @Test
     public void testConcurrentTransactions() throws InterruptedException {
+        BankAccount bankAccountByCustomerName = bankRepository.getBankAccountByCustomerName("ACC-12345");
         ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        executor.submit(() -> bankService.performTransaction("ACC-12345", EN_OperationType.DEPOSIT.name(), new BigDecimal("500.00")));
-        executor.submit(() -> bankService.performTransaction("ACC-12345", EN_OperationType.WITHDRAW.name(), new BigDecimal("100.00")));
+        executor.submit(() -> bankService.performTransaction(bankAccountByCustomerName.getAccountNumber(), EN_OperationType.DEPOSIT.name(), new BigDecimal("500.00")));
+        executor.submit(() -> bankService.performTransaction(bankAccountByCustomerName.getAccountNumber(), EN_OperationType.WITHDRAW.name(), new BigDecimal("100.00")));
 
         executor.shutdown();
         executor.awaitTermination(1, TimeUnit.MINUTES);
 
-        BigDecimal finalBalance = bankService.getBalanceAccountByAccountNumber("ACC-12345").getCurrentBalance();
+        BigDecimal finalBalance = bankService.getBalanceAccountByAccountNumber(bankAccountByCustomerName.getAccountNumber()).getCurrentBalance();
         assertEquals(new BigDecimal("1400.00"), finalBalance);
     }
 
